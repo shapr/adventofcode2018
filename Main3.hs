@@ -15,7 +15,9 @@ main = do input <- TIO.readFile "input3.txt"
           let claims = fromRight (parseM input :: Either String [Claim])
           let coords = Prelude.concatMap (getCoords . conv) claims
           let counts = Prelude.foldl myIns emptyCmap coords
-          print $ Prelude.length $ M.toList $ M.filter (> 1) counts
+          let intersects = nub . sort . Prelude.concat $ snd <$> ( M.toList $ M.filter ((> 1) . Prelude.length) counts)
+          let notintersects = nub . sort . Prelude.concat $ snd <$> ( M.toList $ M.filter ((== 1) . Prelude.length) counts)
+          print $ notintersects \\ intersects
           -- print $ Prelude.length counts
           -- 120813 is too high
           print "hi"
@@ -49,12 +51,12 @@ lengths (C _ _ _ w h) = (w,h)
 
 -- Data.Map to the rescue?
 
-emptyCmap :: M.Map (Int,Int) Int
+emptyCmap :: M.Map (Int,Int) [Int]
 emptyCmap = M.empty
 
-getCoords (x1,y1,x2,y2) = [(x,y) | x <- [x1..x2], y <- [y1..y2]]
+getCoords (claimid, x1,y1,x2,y2) = [([claimid],x,y) | x <- [x1..x2], y <- [y1..y2]]
 
-myIns m k = M.insertWith (+) k 1 m
+myIns m (claimid,x,y) = M.insertWith (++) (x,y) claimid m
 
 -- convert Claim to (x1,y1,x2,y2)
-conv (C _ x1 y1 xoff yoff) = (x1+1, y1+1, x1+xoff, y1+yoff)
+conv (C claimid x1 y1 xoff yoff) = (claimid, x1+1, y1+1, x1+xoff, y1+yoff)
